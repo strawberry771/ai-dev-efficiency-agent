@@ -25,3 +25,6 @@ dependencies = [
     "streamlit>=1.52.1",
     "uvicorn>=0.38.0",
 ]
+
+[tool.setuptools.packages.find]
+include = ["client*", "evaluation*", "server*", "shared*"]
