@@ -91,17 +91,22 @@ flowchart TB
 
     USER --> UI
     UI -->|HTTP / JSON| API
-    API <--> SESSION
-    API --> RT --> WF --> ROUTER
+    API --> SESSION
+    SESSION --> API
+    API --> RT
+    RT --> WF
+    WF --> ROUTER
 
     ROUTER -->|知识问答| K
     ROUTER -->|历史问题| I
     ROUTER -->|测试生成| T
     ROUTER -->|通用对话| DIRECT
-    ROUTER -.->|结构化分类| LLM
+    ROUTER -.-> LLM
 
     API -->|文档入库| INGEST
-    DOCS --> INGEST --> EMB --> CH
+    DOCS --> INGEST
+    INGEST --> EMB
+    EMB --> CH
     K -->|相似度检索| CH
     I -->|关键词加权| ISSUES
     T -->|结构化生成| LLM
@@ -110,29 +115,35 @@ flowchart TB
     K --> CITE
     I --> CITE
     T --> CITE
-    LLM --> CITE --> GUARD --> ANSWER --> API
+    LLM --> CITE
+    CITE --> GUARD
+    GUARD --> ANSWER
+    ANSWER --> API
 
     API -->|待确认结果| UI
-    UI --> REVIEW -->|POST /feedback| API
-    API --> TRACKER --> SQLITE --> SUMMARY
+    UI --> REVIEW
+    REVIEW -->|POST /feedback| API
+    API --> TRACKER
+    TRACKER --> SQLITE
+    SQLITE --> SUMMARY
 
     classDef actor fill:#0F172A,color:#F8FAFC,stroke:#0F172A,stroke-width:1.5px;
-    classDef interface fill:#EAF2FF,color:#172554,stroke:#3B82F6,stroke-width:1.5px;
-    classDef service fill:#EEF2FF,color:#312E81,stroke:#6366F1,stroke-width:1.5px;
-    classDef decision fill:#FFF7E6,color:#78350F,stroke:#F59E0B,stroke-width:1.5px;
-    classDef tool fill:#ECFDF5,color:#064E3B,stroke:#10B981,stroke-width:1.5px;
-    classDef data fill:#F5F3FF,color:#4C1D95,stroke:#8B5CF6,stroke-width:1.5px;
-    classDef governance fill:#FFF1F2,color:#881337,stroke:#F43F5E,stroke-width:1.5px;
-    classDef metric fill:#F0FDFA,color:#134E4A,stroke:#14B8A6,stroke-width:1.5px;
+    classDef apiNode fill:#EAF2FF,color:#172554,stroke:#3B82F6,stroke-width:1.5px;
+    classDef serviceNode fill:#EEF2FF,color:#312E81,stroke:#6366F1,stroke-width:1.5px;
+    classDef decisionNode fill:#FFF7E6,color:#78350F,stroke:#F59E0B,stroke-width:1.5px;
+    classDef toolNode fill:#ECFDF5,color:#064E3B,stroke:#10B981,stroke-width:1.5px;
+    classDef dataNode fill:#F5F3FF,color:#4C1D95,stroke:#8B5CF6,stroke-width:1.5px;
+    classDef guardNode fill:#FFF1F2,color:#881337,stroke:#F43F5E,stroke-width:1.5px;
+    classDef metricNode fill:#F0FDFA,color:#134E4A,stroke:#14B8A6,stroke-width:1.5px;
 
     class USER actor;
-    class UI,API,ANSWER interface;
-    class SESSION,RT,WF service;
-    class ROUTER,GUARD decision;
-    class K,I,T,DIRECT,INGEST tool;
-    class DOCS,EMB,CH,ISSUES,SQLITE data;
-    class LLM,CITE,REVIEW governance;
-    class TRACKER,SUMMARY metric;
+    class UI,API,ANSWER apiNode;
+    class SESSION,RT,WF serviceNode;
+    class ROUTER,GUARD decisionNode;
+    class K,I,T,DIRECT,INGEST toolNode;
+    class DOCS,EMB,CH,ISSUES,SQLITE dataNode;
+    class LLM,CITE,REVIEW guardNode;
+    class TRACKER,SUMMARY metricNode;
 
     style Experience fill:#F8FAFC,stroke:#CBD5E1,stroke-width:1px;
     style Access fill:#F8FAFC,stroke:#CBD5E1,stroke-width:1px;
@@ -140,7 +151,6 @@ flowchart TB
     style Intelligence fill:#F8FAFC,stroke:#CBD5E1,stroke-width:1px;
     style Knowledge fill:#F8FAFC,stroke:#CBD5E1,stroke-width:1px;
     style Feedback fill:#F8FAFC,stroke:#CBD5E1,stroke-width:1px;
-    linkStyle default stroke:#64748B,stroke-width:1.25px;
 ```
 
 ---
