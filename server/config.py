@@ -2,9 +2,12 @@
 # CONFIG
 # =============================
 from dotenv import load_dotenv
+import logging
 import os
 from pathlib import Path
-import streamlit as st
+
+
+logger = logging.getLogger(__name__)
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_EMBEDDING_PATH = PROJECT_ROOT / "models" / "bge-small-zh-v1.5"
@@ -45,9 +48,7 @@ def load_config():
     }
 
     if not config["DEEPSEEK_API_KEY"]:
-        st.error("❌ DEEPSEEK_API_KEY missing in environment.")
-    if not config["SERPER_API_KEY"]:
-        st.error("❌ SERPER_API_KEY missing in environment.")
+        logger.warning("DEEPSEEK_API_KEY is missing; LLM-backed requests will fail.")
 
     return config
 
