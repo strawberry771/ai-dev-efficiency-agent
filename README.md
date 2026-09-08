@@ -40,40 +40,107 @@
 ## 3. 系统架构
 
 ```mermaid
-flowchart LR
-    subgraph Client
-        UI[Streamlit 双面板 UI]
+flowchart TB
+    subgraph Experience["交互层 · Experience"]
+        direction LR
+        USER(["研发人员"])
+        UI["Streamlit 双面板<br/>文档上传 · 任务对话 · Agent Trace"]
+        REVIEW["人工确认<br/>采纳 · 修改后采纳 · 不采纳"]
     end
-    subgraph Server
-        API[FastAPI server/main.py]
-        RT[Lazy Runtime Singleton]
-        WF[LangGraph Workflow]
-        RTR[Intent Router]
-        T1[search_knowledge]
-        T2[search_issue]
-        T3[generate_test_cases]
-        MT[MetricsTracker SQLite]
-    end
-    subgraph Data
-        CH[(Chroma 向量库)]
-        KB[data/documents 知识文档]
-        IS[data/issues/issues.json]
-        EMB[本地 bge-small-zh-v1.5]
-    end
-    LLM[DeepSeek deepseek-chat]
 
-    UI -->|HTTP| API
-    API --> RT
-    RT --> WF
-    WF --> RTR
-    RTR --> T1 & T2 & T3
-    T1 --> CH
-    T2 --> IS
-    T3 --> LLM
-    RTR --> LLM
-    WF --> LLM
-    CH --> EMB
-    API --> MT
+    subgraph Access["接入层 · FastAPI"]
+        direction LR
+        API["API Gateway<br/>/documents · /chat · /feedback · /metrics"]
+        SESSION[("内存 Session<br/>会话上下文")]
+        RT["Lazy Runtime Singleton<br/>模型与索引惰加载"]
+    end
+
+    subgraph Orchestration["Agent 编排层 · LangGraph"]
+        direction LR
+        WF["确定性 Workflow<br/>状态流转与分支编排"]
+        ROUTER{"Intent Router<br/>结构化输出 + 规则兜底"}
+        K["search_knowledge"]
+        I["search_issue"]
+        T["generate_test_cases"]
+        DIRECT["direct_answer"]
+    end
+
+    subgraph Intelligence["模型与结果治理"]
+        direction LR
+        LLM[["DeepSeek<br/>deepseek-chat"]]
+        CITE["Citation Builder<br/>仅从检索 metadata 生成"]
+        GUARD{"证据与不确定性检查"}
+        ANSWER["可追溯结果<br/>答案 · 引用 · 执行路径"]
+    end
+
+    subgraph Knowledge["知识与数据层"]
+        direction LR
+        DOCS[("data/documents<br/>PRD · 技术设计 · 测试资料")]
+        INGEST["多文档解析与分块<br/>PDF · MD · TXT · DOCX"]
+        EMB["本地 Embedding<br/>bge-small-zh-v1.5"]
+        CH[("Chroma<br/>知识向量库")]
+        ISSUES[("issues.json<br/>历史问题库")]
+    end
+
+    subgraph Feedback["反馈与度量层"]
+        direction LR
+        TRACKER["Metrics Tracker<br/>任务、意图、耗时、反馈"]
+        SQLITE[("SQLite<br/>product_metrics.db")]
+        SUMMARY["效果指标<br/>完成率 · 采纳率 · 修改率 · P95"]
+    end
+
+    USER --> UI
+    UI -->|HTTP / JSON| API
+    API <--> SESSION
+    API --> RT --> WF --> ROUTER
+
+    ROUTER -->|知识问答| K
+    ROUTER -->|历史问题| I
+    ROUTER -->|测试生成| T
+    ROUTER -->|通用对话| DIRECT
+    ROUTER -.->|结构化分类| LLM
+
+    API -->|文档入库| INGEST
+    DOCS --> INGEST --> EMB --> CH
+    K -->|相似度检索| CH
+    I -->|关键词加权| ISSUES
+    T -->|结构化生成| LLM
+    DIRECT --> LLM
+
+    K --> CITE
+    I --> CITE
+    T --> CITE
+    LLM --> CITE --> GUARD --> ANSWER --> API
+
+    API -->|待确认结果| UI
+    UI --> REVIEW -->|POST /feedback| API
+    API --> TRACKER --> SQLITE --> SUMMARY
+
+    classDef actor fill:#0F172A,color:#F8FAFC,stroke:#0F172A,stroke-width:1.5px;
+    classDef interface fill:#EAF2FF,color:#172554,stroke:#3B82F6,stroke-width:1.5px;
+    classDef service fill:#EEF2FF,color:#312E81,stroke:#6366F1,stroke-width:1.5px;
+    classDef decision fill:#FFF7E6,color:#78350F,stroke:#F59E0B,stroke-width:1.5px;
+    classDef tool fill:#ECFDF5,color:#064E3B,stroke:#10B981,stroke-width:1.5px;
+    classDef data fill:#F5F3FF,color:#4C1D95,stroke:#8B5CF6,stroke-width:1.5px;
+    classDef governance fill:#FFF1F2,color:#881337,stroke:#F43F5E,stroke-width:1.5px;
+    classDef metric fill:#F0FDFA,color:#134E4A,stroke:#14B8A6,stroke-width:1.5px;
+
+    class USER actor;
+    class UI,API,ANSWER interface;
+    class SESSION,RT,WF service;
+    class ROUTER,GUARD decision;
+    class K,I,T,DIRECT,INGEST tool;
+    class DOCS,EMB,CH,ISSUES,SQLITE data;
+    class LLM,CITE,REVIEW governance;
+    class TRACKER,SUMMARY metric;
+
+    style Experience fill:#F8FAFC,stroke:#CBD5E1,stroke-width:1px;
+    style Access fill:#F8FAFC,stroke:#CBD5E1,stroke-width:1px;
+    style Orchestration fill:#F8FAFC,stroke:#CBD5E1,stroke-width:1px;
+    style Intelligence fill:#F8FAFC,stroke:#CBD5E1,stroke-width:1px;
+    style Knowledge fill:#F8FAFC,stroke:#CBD5E1,stroke-width:1px;
+    style Feedback fill:#F8FAFC,stroke:#CBD5E1,stroke-width:1px;
+    linkStyle default stroke:#64748B,stroke-width:1.25px;
 ```
 
 ---
@@ -84,17 +151,106 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    START([START]) --> C{classify_intent}
-    C -->|knowledge_query| RK[retrieve_knowledge]
-    C -->|issue_query| RI[retrieve_issue]
-    C -->|test_case_generation| GT[generate_test_cases]
-    C -->|general_chat| DA[direct_answer]
-    RK --> GFA[generate_final_answer]
-    RI --> GFA
-    GT --> GFA
+    START(["START"]) --> INIT["初始化任务状态<br/>session_id · task_id · messages"]
+
+    subgraph Routing["① 意图识别"]
+        CLASSIFY["classify_intent<br/>DeepSeek 结构化输出"]
+        VALID{"IntentDecision<br/>是否合法？"}
+        FALLBACK["确定性规则兜底<br/>保证路由可用"]
+        ROUTE{"route_by_intent"}
+
+        CLASSIFY --> VALID
+        VALID -->|是| ROUTE
+        VALID -->|否 / 模型异常| FALLBACK --> ROUTE
+    end
+
+    INIT --> CLASSIFY
+
+    subgraph Branches["② 确定性工具分支"]
+        RK["retrieve_knowledge<br/>search_knowledge"]
+        KE{"score ≥ 阈值<br/>且存在有效片段？"}
+        RI["retrieve_issue<br/>search_issue"]
+        IE{"找到真实<br/>issue_id？"}
+        RTK["检索需求上下文<br/>search_knowledge"]
+        TE{"需求依据<br/>是否充足？"}
+        GT["generate_test_cases<br/>Pydantic Schema + basis_type"]
+        DA["direct_answer<br/>通用对话"]
+    end
+
+    ROUTE -->|knowledge_query| RK --> KE
+    ROUTE -->|issue_query| RI --> IE
+    ROUTE -->|test_case_generation| RTK --> TE
+    ROUTE -->|general_chat| DA
+
+    subgraph Guardrails["③ 证据边界与降级"]
+        NO_K["知识库依据不足<br/>返回固定降级提示"]
+        NO_I["未找到历史 Issue<br/>不生成虚构编号"]
+        MARK["标记能力边界<br/>documented / ai_suggestion"]
+    end
+
+    KE -->|是| GFA
+    KE -->|否| NO_K
+    IE -->|是| GFA
+    IE -->|否| NO_I
+    TE -->|是| GT --> MARK --> GFA
+    TE -->|否| NO_K
     DA --> GFA
-    GFA --> PC[prepare_citations]
-    PC --> END([END])
+
+    subgraph Assembly["④ 结果组装与溯源"]
+        GFA["generate_final_answer<br/>仅使用已检索上下文"]
+        PC["prepare_citations<br/>从 metadata 去重组装"]
+        CHECK{"insufficient_evidence<br/>或高不确定性？"}
+        FLAG["requires_confirmation = true<br/>建议人工确认"]
+        RESULT["结构化响应<br/>答案 · 引用 · 工具 · 耗时"]
+
+        GFA --> PC --> CHECK
+        CHECK -->|是| FLAG --> RESULT
+        CHECK -->|否| RESULT
+    end
+
+    NO_K --> RESULT
+    NO_I --> RESULT
+
+    subgraph HumanLoop["⑤ Human-in-the-loop 与指标闭环"]
+        TASK[("记录任务<br/>intent · latency · success")]
+        CONFIRM{"用户反馈"}
+        ACCEPT["采纳<br/>accepted"]
+        EDIT["修改后采纳<br/>edited_and_accepted"]
+        REJECT["不采纳<br/>rejected"]
+        METRICS[("SQLite Metrics<br/>完成率 · 采纳率 · 修改率 · 延迟")]
+
+        RESULT --> TASK --> CONFIRM
+        CONFIRM --> ACCEPT --> METRICS
+        CONFIRM --> EDIT --> METRICS
+        CONFIRM --> REJECT --> METRICS
+    end
+
+    METRICS --> END(["END"])
+
+    classDef terminal fill:#0F172A,color:#F8FAFC,stroke:#0F172A,stroke-width:2px;
+    classDef process fill:#EAF2FF,color:#172554,stroke:#3B82F6,stroke-width:1.5px;
+    classDef decision fill:#FFF7E6,color:#78350F,stroke:#F59E0B,stroke-width:1.5px;
+    classDef tool fill:#ECFDF5,color:#064E3B,stroke:#10B981,stroke-width:1.5px;
+    classDef fallback fill:#FFF1F2,color:#881337,stroke:#F43F5E,stroke-width:1.5px;
+    classDef output fill:#EEF2FF,color:#312E81,stroke:#6366F1,stroke-width:1.5px;
+    classDef human fill:#F0FDFA,color:#134E4A,stroke:#14B8A6,stroke-width:1.5px;
+    classDef store fill:#F5F3FF,color:#4C1D95,stroke:#8B5CF6,stroke-width:1.5px;
+
+    class START,END terminal;
+    class INIT,CLASSIFY,FALLBACK,GFA,PC process;
+    class VALID,ROUTE,KE,IE,TE,CHECK,CONFIRM decision;
+    class RK,RI,RTK,GT,DA tool;
+    class NO_K,NO_I,MARK,FLAG fallback;
+    class RESULT output;
+    class ACCEPT,EDIT,REJECT human;
+    class TASK,METRICS store;
+
+    style Routing fill:#F8FAFC,stroke:#CBD5E1,stroke-width:1px;
+    style Branches fill:#F8FAFC,stroke:#CBD5E1,stroke-width:1px;
+    style Guardrails fill:#FFF9FA,stroke:#FECDD3,stroke-width:1px;
+    style Assembly fill:#F8FAFC,stroke:#CBD5E1,stroke-width:1px;
+    style HumanLoop fill:#F6FFFD,stroke:#99F6E4,stroke-width:1px;
+    linkStyle default stroke:#64748B,stroke-width:1.25px;
 ```
 
 ---
