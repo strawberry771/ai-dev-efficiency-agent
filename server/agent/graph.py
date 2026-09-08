@@ -1,15 +1,16 @@
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode, tools_condition
-from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage
 
 from server.agent.state import AgentState
 
-def build_agent(model_name: str, groq_api_key: str, tools):
-    llm = ChatGroq(
+def build_agent(model_name: str, api_key: str, base_url: str, tools):
+    llm = ChatOpenAI(
         model=model_name,
         temperature=0,
-        groq_api_key=groq_api_key,
+        api_key=api_key,
+        base_url=base_url,
     ).bind_tools(tools)
 
 

@@ -28,7 +28,7 @@ A lightweight end-to-end Retrieval-Augmented Generation (RAG) demo. It lets you 
 - Python 3.11+
 - `uv` or `pip` for installing dependencies
 - Access tokens:
-  - `GROQ_API_KEY` for the LLM
+  - `DEEPSEEK_API_KEY` for the LLM
   - `SERPER_API_KEY` for Google Serper search
 - PDF with extractable text (PyPDF is used for parsing)
 
@@ -52,7 +52,7 @@ A lightweight end-to-end Retrieval-Augmented Generation (RAG) demo. It lets you 
 
 3. Create a `.env` file in the project root with your keys:
    ```bash
-   GROQ_API_KEY=your_groq_key
+   DEEPSEEK_API_KEY=your_deepseek_key
    SERPER_API_KEY=your_serper_key
    ```
 
@@ -94,9 +94,10 @@ Then open http://localhost:8501.
 ---
 ## Configuration
 `server/config.py` loads settings from environment variables and defaults:
-- `GROQ_API_KEY` (required)
+- `DEEPSEEK_API_KEY` (required)
 - `SERPER_API_KEY` (required)
-- `MODEL_NAME` (default: `moonshotai/kimi-k2-instruct-0905`)
+- `MODEL_NAME` (default: `deepseek-chat`)
+- `DEEPSEEK_BASE_URL` (default: `https://api.deepseek.com`)
 - `EMBEDDING_MODEL` (default: `sentence-transformers/all-MiniLM-L6-v2`)
 - `WORKSPACE_DIR` (default: `.rag_workspace`)
 
@@ -108,7 +109,7 @@ If keys are missing, errors are surfaced in Streamlit to help you catch setup is
 
 ---
 ## Troubleshooting tips
-- Make sure `GROQ_API_KEY` and `SERPER_API_KEY` are set before starting the API.
+- Make sure `DEEPSEEK_API_KEY` and `SERPER_API_KEY` are set before starting the API.
 - Remove `.rag_workspace` if you want to clear cached PDFs and vector stores.
 - If a PDF has no extractable text, PyPDF will raise an error during upload.
 - For cross-origin setups, adjust `API_BASE` in `client/app.py` to point to your API host.

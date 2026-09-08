@@ -69,7 +69,8 @@ async def upload_pdf(file: UploadFile = File(...)):
 
     agent = build_agent(
         CONFIG["MODEL_NAME"],
-        CONFIG["GROQ_API_KEY"],
+        CONFIG["DEEPSEEK_API_KEY"],
+        CONFIG["DEEPSEEK_BASE_URL"],
         tools,
     )
 

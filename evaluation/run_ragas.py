@@ -1,13 +1,14 @@
 """
-Offline RAG evaluation using RAGAS with Groq (Moonshot Kimi-K2) as judge.
+Offline RAG evaluation using RAGAS with DeepSeek (deepseek-chat) as judge.
 
 Best practice:
 - Offline only
 - No FastAPI / Streamlit imports
-- Groq used only for evaluation
+- DeepSeek used only for evaluation
 """
 
 import json
+import os
 from pathlib import Path
 
 from datasets import Dataset
@@ -19,7 +20,7 @@ from ragas.metrics import (
     AnswerRelevancy,
 )
 
-from langchain_groq import ChatGroq
+from langchain_openai import ChatOpenAI
 from langchain_huggingface import HuggingFaceEmbeddings
 
 from dotenv import load_dotenv
@@ -34,11 +35,12 @@ load_dotenv()
 # -----------------------------
 DATASET_PATH = Path(__file__).parent / "datasets" / "rag_samples.jsonl"
 
-# Groq judge model
-JUDGE_LLM = ChatGroq(
-    model="moonshotai/kimi-k2-instruct-0905",
+# DeepSeek judge model (OpenAI-compatible)
+JUDGE_LLM = ChatOpenAI(
+    model="deepseek-chat",
+    base_url="https://api.deepseek.com",
+    api_key=os.getenv("DEEPSEEK_API_KEY"),
     temperature=0,
-    n=1,
 )
 
 
@@ -80,7 +82,7 @@ def main():
     dataset = load_jsonl(DATASET_PATH)
 
     print(f"✅ Loaded {len(dataset)} samples")
-    print("🔍 Running RAGAS evaluation with Groq judge...\n")
+    print("🔍 Running RAGAS evaluation with DeepSeek judge...\n")
 
     results = evaluate(
         dataset,
