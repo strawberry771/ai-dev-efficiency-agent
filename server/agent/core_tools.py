@@ -8,7 +8,7 @@ they return structured dicts rather than strings.
 The legacy optional tools (web / arXiv) stay in ``server/agent/tools.py`` and
 are not part of the default workflow.
 """
-from typing import List, Optional
+from typing import List, Optional, Literal
 
 from pydantic import BaseModel, Field
 
@@ -21,6 +21,8 @@ MIN_SIMILARITY = 0.45
 
 
 class TestCase(BaseModel):
+    __test__ = False  # not a pytest test class
+
     id: str
     title: str
     precondition: str = ""
@@ -28,10 +30,12 @@ class TestCase(BaseModel):
     expected_result: str = ""
     priority: str = "P1"
     source_basis: List[str] = Field(default_factory=list)
-    basis_type: str = "ai_suggestion"  # "documented" | "ai_suggestion"
+    basis_type: Literal["documented", "ai_suggestion"] = "ai_suggestion"
 
 
 class TestCaseList(BaseModel):
+    __test__ = False  # not a pytest test class
+
     test_cases: List[TestCase]
 
 
