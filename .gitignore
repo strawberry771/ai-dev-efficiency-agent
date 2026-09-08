@@ -12,3 +12,6 @@ wheels/
 .env.*
 !.env.example
 .rag_workspace
+
+# Model weights (downloaded, never committed)
+models/

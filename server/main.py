@@ -56,7 +56,7 @@ async def upload_pdf(file: UploadFile = File(...)):
     pdf_path.write_bytes(file_bytes)
 
     docs = load_pdf(str(pdf_path))
-    embedder = get_embedder(CONFIG["EMBEDDING_MODEL"])
+    embedder = get_embedder(CONFIG["EMBEDDING_MODEL_PATH"])
 
     vectordb = build_vectorstore(
         documents=docs,
