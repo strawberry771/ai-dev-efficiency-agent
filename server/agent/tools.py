@@ -6,7 +6,7 @@ from langchain_community.retrievers import ArxivRetriever
 def format_pdf_hits(docs):
     lines = ["PDF RAG Results:"]
     for i, d in enumerate(docs, 1):
-        snippet = d.page_content.replace("\n", " ")[:400]
+        snippet = d.page_content.replace("\n", " ")[:1200]
         lines.append(f"{i}. (page {d.metadata.get('page')}) {snippet}")
     return "\n".join(lines)
 
