@@ -112,14 +112,11 @@ def load_knowledge_documents(paths: List[str]) -> List[Document]:
     return docs
 
 
-def build_knowledge_store(
+def _split_with_chunk_ids(
     documents: List[Document],
-    embedder,
-    persist_dir: str,
     chunk_size: int = 800,
     chunk_overlap: int = 150,
-) -> Chroma:
-    """Split documents into chunks, assign ``chunk_id``, and build + persist Chroma."""
+) -> List[Document]:
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
@@ -134,14 +131,44 @@ def build_knowledge_store(
         md["chunk_id"] = f"{doc_id}:{idx}"
         counters[doc_id] = idx + 1
         s.metadata = md
+    return splits
 
+
+def build_knowledge_store(
+    documents: List[Document],
+    embedder,
+    persist_dir: str,
+    chunk_size: int = 800,
+    chunk_overlap: int = 150,
+) -> Chroma:
+    """Split documents into chunks, assign ``chunk_id``, and build + persist Chroma."""
+    splits = _split_with_chunk_ids(documents, chunk_size, chunk_overlap)
+    # Chroma 0.4.x persists automatically; no explicit persist() needed.
     vectordb = Chroma.from_documents(
         splits,
         embedder,
         persist_directory=persist_dir,
     )
-    vectordb.persist()
     return vectordb
+
+
+def add_document_to_store(
+    vectordb: Chroma,
+    document_path: str,
+    chunk_size: int = 800,
+    chunk_overlap: int = 150,
+) -> int:
+    """Load a single document and append its chunks to an existing store.
+
+    Returns the number of chunks added. Used for incremental upload so the live
+    store is mutated in place (avoiding a rebuild that would hit Windows file
+    locks on the open Chroma directory).
+    """
+    docs = load_knowledge_documents([document_path])
+    splits = _split_with_chunk_ids(docs, chunk_size, chunk_overlap)
+    if splits:
+        vectordb.add_documents(splits)
+    return len(splits)
 
 
 def search_knowledge(vectordb: Chroma, query: str, k: int = 5, filter: dict = None) -> List[dict]:
