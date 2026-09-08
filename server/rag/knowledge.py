@@ -144,15 +144,18 @@ def build_knowledge_store(
     return vectordb
 
 
-def search_knowledge(vectordb: Chroma, query: str, k: int = 5) -> List[dict]:
+def search_knowledge(vectordb: Chroma, query: str, k: int = 5, filter: dict = None) -> List[dict]:
     """Retrieve top-k chunks with metadata and a similarity score.
 
     Chroma returns an L2 *distance* (lower is more relevant). Because the
     embedding model L2-normalizes vectors, ``score = 1 - distance / 2`` is
     exactly the cosine similarity (higher is more relevant). The raw distance
     is also returned for transparency.
+
+    ``filter`` is an optional Chroma metadata filter (e.g.
+    ``{"document_type": "prd"}``).
     """
-    hits = vectordb.similarity_search_with_score(query, k=k)
+    hits = vectordb.similarity_search_with_score(query, k=k, filter=filter)
     results = []
     for doc, distance in hits:
         md = doc.metadata or {}
