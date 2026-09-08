@@ -95,6 +95,9 @@ class ChatResponse(BaseModel):
     latency_ms: int
     requires_confirmation: bool
     success: bool
+    path: list
+    tools_used: list
+    retrieved: list
 
 
 class FeedbackRequest(BaseModel):
@@ -142,8 +145,74 @@ async def upload_pdf(file: UploadFile = File(...)):
 
 
 # -----------------------------
+# Indexed documents
+# -----------------------------
+@app.get("/documents")
+def list_documents():
+    rt = _get_runtime()
+    coll = rt["vectordb"]._collection
+    data = coll.get(limit=coll.count(), include=["metadatas"])
+    by_file = {}
+    for m in data.get("metadatas") or []:
+        fn = m.get("filename", "?")
+        e = by_file.setdefault(fn, {"document_type": m.get("document_type", "?"), "chunks": 0})
+        e["chunks"] += 1
+    docs = sorted(
+        ({"filename": fn, "document_type": v["document_type"], "chunks": v["chunks"]}
+         for fn, v in by_file.items()),
+        key=lambda d: d["filename"],
+    )
+    return {"documents": docs}
+
+
+# -----------------------------
 # Chat
 # -----------------------------
+_BRANCH_BY_INTENT = {
+    "knowledge_query": "retrieve_knowledge",
+    "issue_query": "retrieve_issue",
+    "test_case_generation": "generate_test_cases",
+    "general_chat": "direct_answer",
+}
+
+
+def _workflow_path(intent: str) -> list:
+    """Deterministic node sequence actually traversed for a given intent.
+
+    This is the fixed pipeline (not LLM reasoning), safe to surface in the UI.
+    """
+    branch = _BRANCH_BY_INTENT.get(intent, "direct_answer")
+    return ["classify_intent", branch, "generate_final_answer", "prepare_citations"]
+
+
+def _normalize_retrieved(intent: str, ctx: list) -> list:
+    """Trim retrieved chunks to display metadata + short excerpt.
+
+    Exposes only factual retrieval metadata (source / section / score), never
+    the LLM's chain-of-thought or hidden reasoning.
+    """
+    items = []
+    for r in ctx or []:
+        if intent == "issue_query":
+            items.append({
+                "source": r.get("issue_id", ""),
+                "title": r.get("title", ""),
+                "symptom": r.get("symptom", ""),
+                "resolution": r.get("resolution", ""),
+                "score": r.get("score"),
+            })
+        else:
+            items.append({
+                "source": r.get("source", ""),
+                "section": r.get("section"),
+                "page": r.get("page"),
+                "chunk_id": r.get("chunk_id"),
+                "score": round(r.get("score", 0.0), 3) if r.get("score") is not None else None,
+                "excerpt": (r.get("content", "") or "")[:200],
+            })
+    return items
+
+
 @app.post("/chat", response_model=ChatResponse)
 def chat(req: ChatRequest):
     rt = _get_runtime()
@@ -168,16 +237,20 @@ def chat(req: ChatRequest):
     )
 
     answer = state.get("final_answer", "")
+    intent = state.get("intent", "general_chat")
     SESSIONS[req.session_id] = history + [AIMessage(content=answer)]
 
     return ChatResponse(
         task_id=task_id,
         answer=answer,
-        intent=state.get("intent", "general_chat"),
+        intent=intent,
         citations=state.get("citations", []),
         latency_ms=state.get("latency_ms", 0),
         requires_confirmation=bool(state.get("requires_confirmation", False)),
         success=bool(state.get("success", False)),
+        path=_workflow_path(intent),
+        tools_used=state.get("tool_results", {}).get("tools_used", []),
+        retrieved=_normalize_retrieved(intent, state.get("retrieved_context", [])),
     )
 
 
