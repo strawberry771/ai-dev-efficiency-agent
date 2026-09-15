@@ -6,19 +6,7 @@
 
 ---
 
-## 1. 上游项目声明（Upstream Attribution）
-
-本项目是对开源项目 **`IbraahimLab/Agentic-RAG-with-FastAPI-and-Streamlit`** 的二次开发（secondary development），在其 FastAPI + LangGraph + Streamlit 的骨架之上，将「上传 PDF 的通用 RAG 助手」改造成面向研发效能的「AI 研发效能 Agent」。
-
-- 上游作者：**IbraahimLab**；上游仓库：`https://github.com/IbraahimLab/Agentic-RAG-with-FastAPI-and-Streamlit`
-- 保留的上游代码：`server/agent/graph.py`、`server/agent/tools.py`（旧版 Serper/arXiv 工具）、`server/rag/loaders.py`、`server/rag/vectorstore.py`、`server/observability/langsmith.py`、`evaluation/run_ragas.py`。这些文件保留原样供参考，但**不再位于默认运行路径**。
-- 新增/重写的核心：`server/rag/knowledge.py`、`server/rag/index.py`、`server/agent/workflow.py`、`server/agent/core_tools.py`、`server/agent/router.py`、`server/issues/`、`server/metrics/`、`server/main.py`、`client/app.py`、`evaluation/run_product_eval.py`。
-
-本项目不将上游作者代码据为己有；对上游保留的每一段代码，本文档与其文件头注释均予以标注。
-
----
-
-## 2. 项目目标与能力
+## 1. 项目目标与能力
 
 目标：把「检索增强」落到研发日常场景，让助手**只回答有依据的内容，并保留每一步的引用来源**。核心能力：
 
@@ -37,7 +25,7 @@
 
 ---
 
-## 3. 系统架构
+## 2. 系统架构
 
 ```mermaid
 flowchart TB
@@ -155,7 +143,7 @@ flowchart TB
 
 ---
 
-## 4. 工作流（确定性流水线）
+## 3. 工作流（确定性流水线）
 
 与上游「LLM 自由 tool-calling」不同，本项目的意图路由与工具调用是**确定性的**——意图分类后直接进入固定分支，不存在隐式推理循环。
 
@@ -265,7 +253,7 @@ flowchart TD
 
 ---
 
-## 5. 仓库结构
+## 4. 仓库结构
 
 ```
 .
@@ -306,7 +294,7 @@ flowchart TD
 
 ---
 
-## 6. 数据设计
+## 5. 数据设计
 
 - **知识文档**：`data/documents/` 下 3 份中文演示文档，覆盖登录系统的 PRD、技术设计、测试用例说明。**均为演示用合成文档（Demo / synthetic development document）**，不描述任何真实公司或系统，文件头均带免责声明。
 - **历史 Issue**：`data/issues/issues.json` 下 10 条合成 Issue（`ISSUE-001` ~ `ISSUE-010`），字段含 `issue_id / title / module / symptom / root_cause / resolution / severity / tags / created_at`。
@@ -315,7 +303,7 @@ flowchart TD
 
 ---
 
-## 7. RAG 元数据设计
+## 6. RAG 元数据设计
 
 每个检索分块（chunk）都带如下元数据，供引用与过滤：
 
@@ -333,7 +321,7 @@ flowchart TD
 
 ---
 
-## 8. 核心工具（三大确定性工具）
+## 7. 核心工具（三大确定性工具）
 
 定义于 `server/agent/core_tools.py`，由工作流**直接调用**（非 LLM tool-calling），返回结构化 dict：
 
@@ -343,7 +331,7 @@ flowchart TD
 
 ---
 
-## 9. 意图路由
+## 8. 意图路由
 
 `server/agent/router.py` 将用户输入分为四类：`knowledge_query / issue_query / test_case_generation / general_chat`。
 
@@ -352,7 +340,7 @@ flowchart TD
 
 ---
 
-## 10. 引用溯源与非编造（Citation / No Fabrication）
+## 9. 引用溯源与非编造（Citation / No Fabrication）
 
 - 引用（citation）**只来自真实检索结果**，在 `prepare_citations` 节点从 `retrieved_context` 元数据构建，不包含任何模型幻觉来源。
 - 最终答案 prompt 明确要求「仅根据检索片段回答，用 `[1][2]` 标注引用来源，不要编造来源或超出片段内容」。
@@ -361,7 +349,7 @@ flowchart TD
 
 ---
 
-## 11. Human-in-the-Loop（人工反馈闭环）
+## 10. Human-in-the-Loop（人工反馈闭环）
 
 - 前端对每条回答提供 **采纳 / 修改后采纳 / 不采纳** 三个按钮。
 - 采纳率偏低或出现「AI 建议」型测试用例时，回答会追加 `（建议人工确认）` 提示。
@@ -369,7 +357,7 @@ flowchart TD
 
 ---
 
-## 12. 指标定义（Metrics）
+## 11. 指标定义（Metrics）
 
 `server/metrics/tracker.py` 以 SQLite 表 `tasks` 记录每任务一行（仅任务元数据与反馈，不存查询/答案内容）。`GET /metrics/summary` 返回：
 
@@ -383,7 +371,7 @@ flowchart TD
 
 ---
 
-## 13. 前置条件
+## 12. 前置条件
 
 - Python 3.11+
 - 依赖安装工具：`uv` 或 `pip`（本环境用 `.venv` + `pip`）
@@ -395,7 +383,7 @@ flowchart TD
 
 ---
 
-## 14. 安装与配置
+## 13. 安装与配置
 
 ```bash
 python -m venv .venv
@@ -420,7 +408,7 @@ EMBEDDING_MODEL_PATH=models/bge-small-zh-v1.5
 
 ---
 
-## 15. 运行
+## 14. 运行
 
 ### 1) 启动后端 API
 
@@ -440,7 +428,7 @@ streamlit run client/app.py --server.port 8501
 
 ---
 
-## 16. API 参考
+## 15. API 参考
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
@@ -468,7 +456,7 @@ streamlit run client/app.py --server.port 8501
 
 ---
 
-## 17. 测试
+## 16. 测试
 
 ```bash
 python -m pytest tests/ -v
@@ -478,7 +466,7 @@ python -m pytest tests/ -v
 
 ---
 
-## 18. 评测（Evaluation）
+## 17. 评测（Evaluation）
 
 离线评测脚本 `evaluation/run_product_eval.py` 直接运行编译后的工作流（不依赖服务器），对 `evaluation/datasets/dev_agent_eval.json` 的 **30 条数据**（10 知识 + 10 Issue + 10 测试用例）逐条运行并统计：
 
@@ -501,7 +489,7 @@ python evaluation/run_product_eval.py
 
 ---
 
-## 19. 已知问题与局限
+## 18. 已知问题与局限
 
 1. **意图边界歧义**：以「会怎样 / 为什么」发问的历史问题可能被路由为知识问答（见上 `i008`）。
 2. **检索质量依赖 Embedding 与阈值**：`MIN_SIMILARITY=0.45` 为当前标定值，换文档集后需重标定。
@@ -512,7 +500,7 @@ python evaluation/run_product_eval.py
 
 ---
 
-## 20. 安全注意事项
+## 19. 安全注意事项
 
 - `.env` 与 `DEEPSEEK_API_KEY` **从未提交**；`.env.example` 仅保留空占位。
 - Embedding 模型权重在 `models/`（已 gitignore），**不提交 Git**。
@@ -521,12 +509,10 @@ python evaluation/run_product_eval.py
 
 ---
 
-## 21. 技术栈
+## 20. 技术栈
 
 FastAPI · LangGraph · LangChain · Chroma · HuggingFace `bge-small-zh-v1.5` · DeepSeek `deepseek-chat` · Streamlit · SQLite · Pydantic · pytest
 
 ---
 
-## 22. License & Contributing
 
-沿用上游项目的 MIT 许可（如有）。贡献请保持代码简洁、有注释、可运行、可评估；涉及上游代码的改动请保留来源标注。
