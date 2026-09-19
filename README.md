@@ -8,15 +8,23 @@
 
 ## Demo 演示（产品截图）
 
-| 截图 | 展示内容 |
-| --- | --- |
-| `assets/demo/01_chat.png` | 知识问答：用户提问 → Agent 回答 + Citation 溯源 |
-| `assets/demo/02_agent_trace.png` | Agent 执行过程：Intent → Tool → Retrieved → Latency |
-| `assets/demo/03_source_reference.png` | 引用溯源：Source / Section（RAG 可溯源） |
-| `assets/demo/04_feedback.png` | 人工反馈闭环：采纳 / 修改后采纳 / 不采纳 |
+以下为系统本地部署后的**真实运行截图**（非示意图）。
 
-> ⚠️ 截图待补充：本仓库当前未内置运行截图。真实截图将在本地部署后从真实运行界面截取（**不伪造**），
-> 截取方式见 [`assets/demo/README.md`](assets/demo/README.md)。
+### 1. 知识问答（问题 + 回答 + Citation 溯源）
+
+![知识问答](assets/demo/01_chat.png)
+
+### 2. Agent 执行过程（Intent → Tool → Retrieved → Latency）
+
+![Agent Trace](assets/demo/02_agent_trace.png)
+
+### 3. 引用溯源（Source / Section）
+
+![引用溯源](assets/demo/03_source_reference.png)
+
+### 4. 人工反馈闭环（采纳 / 修改后采纳 / 不采纳）
+
+![反馈闭环](assets/demo/04_feedback.png)
 
 ---
 

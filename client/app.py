@@ -177,6 +177,8 @@ with right:
 
             st.markdown(answer)
             st.session_state.chat.append({"role": "assistant", "content": answer, "meta": meta})
+        # Re-run so the history loop above renders this turn's citations + Agent trace.
+        st.rerun()
 
 # -----------------------------
 # Feedback (bottom, for the latest assistant turn)

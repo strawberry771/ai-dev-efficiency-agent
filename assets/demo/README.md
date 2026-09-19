@@ -1,10 +1,9 @@
 # Demo Screenshots
 
-> **Demo screenshots will be generated after local deployment.**
+> **Real screenshots captured from a local deployment** — not mockups.
 
-本目录用于存放「AI 研发效能 Agent」的**真实运行截图**（产品 Demo 展示用）。
-当前仓库**尚未内置截图**——以下 4 张截图需在本地把系统跑起来后，从真实运行界面截取，
-**不生成、不使用任何伪造的运行截图**。
+本目录存放「AI 研发效能 Agent」的**真实运行截图**（产品 Demo 展示用）。
+以下 4 张截图均为系统本地部署后从真实运行界面截取，**未使用任何伪造 / 示意图**。
 
 ## 需要的 4 张截图
 
@@ -45,7 +44,7 @@
 - **`04_feedback.png`** — 截取回答下方的「✅ 采纳 / ✏️ 修改后采纳 / ❌ 不采纳」按钮区域，
   展示反馈闭环（记录 `accepted` / `edited_and_accepted` / `rejected`，用于统计采纳率）。
 
-## 截取后
+## 重新生成
 
-将 4 张 PNG 按上表文件名放入本目录，根目录 `README.md` 的「Demo 演示（产品截图）」一节
-即可引用它们展示。
+以上 4 张截图已放入本目录，并在根目录 `README.md` 的「Demo 演示（产品截图）」一节展示。
+如需重新生成（例如更换演示问题或数据后），按上文「如何生成真实截图」步骤重跑即可。
