@@ -6,6 +6,20 @@
 
 ---
 
+## Demo 演示（产品截图）
+
+| 截图 | 展示内容 |
+| --- | --- |
+| `assets/demo/01_chat.png` | 知识问答：用户提问 → Agent 回答 + Citation 溯源 |
+| `assets/demo/02_agent_trace.png` | Agent 执行过程：Intent → Tool → Retrieved → Latency |
+| `assets/demo/03_source_reference.png` | 引用溯源：Source / Section（RAG 可溯源） |
+| `assets/demo/04_feedback.png` | 人工反馈闭环：采纳 / 修改后采纳 / 不采纳 |
+
+> ⚠️ 截图待补充：本仓库当前未内置运行截图。真实截图将在本地部署后从真实运行界面截取（**不伪造**），
+> 截取方式见 [`assets/demo/README.md`](assets/demo/README.md)。
+
+---
+
 ## 1. 项目目标与能力
 
 目标：把「检索增强」落到研发日常场景，让助手**只回答有依据的内容，并保留每一步的引用来源**。核心能力：
@@ -258,6 +272,7 @@ flowchart TD
 ```
 .
 ├── client/app.py                 # Streamlit 双面板 UI
+├── assets/demo/                  # 产品演示截图（本地部署后生成，见 assets/demo/README.md）
 ├── server/
 │   ├── main.py                   # FastAPI 接口 + 懒加载 runtime
 │   ├── config.py                 # 环境变量 + 本地 Embedding 路径解析
