@@ -4,6 +4,30 @@
 
 后端为 **FastAPI + LangGraph**，前端为 **Streamlit**，向量检索使用 **Chroma + 本地 bge-small-zh-v1.5 中文 Embedding**，LLM 使用 **DeepSeek（deepseek-chat）**。
 
+## 产品定位
+
+面向研发与测试团队的 **AI 工作助手**：通过「Agent 意图路由 + RAG 检索 + 确定性工具调用」，把分散在 PRD / 技术设计 / 测试资料中的研发知识、沉淀的历史 Issue 与重复的测试用例设计，变成**可溯源、可反馈、可量化**的自动问答能力，降低研发知识检索、历史问题定位与测试用例设计成本。
+
+## 用户痛点
+
+| 用户 | 痛点 |
+| --- | --- |
+| 开发工程师 | 技术文档分散，问题定位依赖个人经验与口头传承 |
+| 测试工程师 | 测试用例重复编写，边界场景覆盖不足 |
+| 团队负责人 | 历史问题与解决方案难沉淀、难复用 |
+
+## 产品能力
+
+- 知识智能问答（引用溯源，杜绝编造）
+- 历史 Issue 检索（关键词加权打分）
+- 测试用例生成（区分「文档依据 / AI 建议」）
+- Agent 意图路由（知识 / Issue / 测试用例 / 闲聊 四分类）
+- 证据不足如实降级（不强行回答）
+- 人工反馈闭环（采纳 / 修改后采纳 / 不采纳）
+- 指标量化（完成率 / 采纳率 / 编辑率 / 延迟分位数）
+
+> 产品迭代思路见 [docs/product_iteration.md](docs/product_iteration.md)；能力拆解（Skill 定义）见 [skills/](skills/README.md)。
+
 ---
 
 ## Demo 演示（产品截图）
@@ -281,6 +305,8 @@ flowchart TD
 .
 ├── client/app.py                 # Streamlit 双面板 UI
 ├── assets/demo/                  # 产品演示截图（本地部署后生成，见 assets/demo/README.md）
+├── skills/                       # 能力拆解（Skill 定义，对应 Router 意图与核心工具）
+├── docs/product_iteration.md     # 产品迭代记录（问题 → 优化 → 沉淀能力）
 ├── server/
 │   ├── main.py                   # FastAPI 接口 + 懒加载 runtime
 │   ├── config.py                 # 环境变量 + 本地 Embedding 路径解析
