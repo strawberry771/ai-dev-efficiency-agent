@@ -1,6 +1,6 @@
 """Product evaluation for the AI 研发效能 Agent.
 
-Runs the compiled workflow directly (offline, no server) over a 30-item
+Runs the compiled workflow directly (no API server required) over a 30-item
 dataset — 10 knowledge / 10 issue / 10 test-case queries — and reports:
 
   * Intent Accuracy
@@ -10,8 +10,9 @@ dataset — 10 knowledge / 10 issue / 10 test-case queries — and reports:
   * Task Completion Rate
   * Mean Latency
 
-Every number comes from a real run of the workflow; nothing is hard-coded or
-fabricated. Results are written to ``evaluation/results/latest.json``.
+The workflow requires a local embedding model and a live DeepSeek API call.
+Results are written to ``evaluation/results/latest.json`` and describe that
+run only; reruns may differ.
 """
 import json
 import sys

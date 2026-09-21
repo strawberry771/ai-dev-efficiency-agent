@@ -3,8 +3,9 @@
 Stores one row per task. Feedback (accepted / edited_and_accepted / rejected)
 is recorded against an existing task via ``record_feedback``.
 
-No API keys, queries or answers are stored — only task metadata and feedback,
-which is local demo logging (see README).
+Stores task metadata and feedback locally, including ``edited_answer`` when
+the user submits a revised answer. It does not store the original chat query
+or assistant answer in this table (see README for other data flows).
 """
 import sqlite3
 import threading

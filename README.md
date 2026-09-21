@@ -4,9 +4,13 @@
 
 后端为 **FastAPI + LangGraph**，前端为 **Streamlit**，向量检索使用 **Chroma + 本地 bge-small-zh-v1.5 中文 Embedding**，LLM 使用 **DeepSeek（deepseek-chat）**。
 
-## 产品定位
+![Streamlit 原型：知识问答、检索来源与反馈入口](assets/demo/01_chat.png)
 
-面向研发与测试团队的 **AI 工作助手**：通过「Agent 意图路由 + RAG 检索 + 确定性工具调用」，把分散在 PRD / 技术设计 / 测试资料中的研发知识、沉淀的历史 Issue 与重复的测试用例设计，变成**可溯源、可反馈、可量化**的自动问答能力，降低研发知识检索、历史问题定位与测试用例设计成本。
+*本地运行的 Streamlit 原型截图；其余执行过程、引用和反馈截图见下方 [Demo 演示](#demo-演示产品截图)。截图展示功能界面，不代表生产部署或用户使用成效。*
+
+## 产品场景
+
+这个原型面向需要查阅研发资料的开发与测试人员：输入问题后，按意图进入知识库问答、历史 Issue 查询或测试用例生成分支。知识回答附检索来源；Issue 分支返回样例库中的已有记录；测试用例区分文档依据与 AI 补充建议。界面允许用户查看执行路径并提交采纳反馈。它用于展示这三类任务的交互与评测方法，尚未验证实际团队使用成效。
 
 ## 用户痛点
 
@@ -18,7 +22,7 @@
 
 ## 产品能力
 
-- 知识智能问答（引用溯源，杜绝编造）
+- 知识智能问答（检索来源可查看；生成内容仍需核对）
 - 历史 Issue 检索（关键词加权打分）
 - 测试用例生成（区分「文档依据 / AI 建议」）
 - Agent 意图路由（知识 / Issue / 测试用例 / 闲聊 四分类）
@@ -34,19 +38,17 @@
 
 以下为系统本地部署后的**真实运行截图**（非示意图）。
 
-### 1. 知识问答（问题 + 回答 + Citation 溯源）
+知识问答界面见页首截图。
 
-![知识问答](assets/demo/01_chat.png)
-
-### 2. Agent 执行过程（Intent → Tool → Retrieved → Latency）
+### 1. Agent 执行过程（Intent → Tool → Retrieved → Latency）
 
 ![Agent Trace](assets/demo/02_agent_trace.png)
 
-### 3. 引用溯源（Source / Section）
+### 2. 引用溯源（Source / Section）
 
 ![引用溯源](assets/demo/03_source_reference.png)
 
-### 4. 人工反馈闭环（采纳 / 修改后采纳 / 不采纳）
+### 3. 人工反馈闭环（采纳 / 修改后采纳 / 不采纳）
 
 ![反馈闭环](assets/demo/04_feedback.png)
 
@@ -54,20 +56,20 @@
 
 ## 1. 项目目标与能力
 
-目标：把「检索增强」落到研发日常场景，让助手**只回答有依据的内容，并保留每一步的引用来源**。核心能力：
+目标：在三类研发资料任务中使用检索增强，并为可检索的回答提供来源信息；引用与提示不能替代人工核验。核心能力：
 
 1. 多文档知识库（PDF / Markdown / TXT，带文档类型元数据）
 2. 历史 Issue 库检索（关键词加权打分）
 3. 三大确定性工具：知识检索 / Issue 检索 / 测试用例生成
 4. 意图路由（知识 / Issue / 测试用例 / 闲聊 四分类）
 5. LangGraph 确定性工作流（非 LLM 自由 tool-calling）
-6. 引用溯源（Citation）——只引用真实检索到的来源，杜绝编造
+6. 引用溯源（Citation）——引用条目从检索结果构建，但不保证生成文字完全准确
 7. 证据不足降级（检索不到依据时如实告知，不强行回答）
 8. 人工反馈闭环（采纳 / 修改后采纳 / 不采纳）
 9. SQLite 指标统计（完成率、采纳率、编辑率、延迟分位数）
 10. 结构化测试用例输出（`basis_type` 区分「文档依据 / AI 建议」）
 11. FastAPI 接口 + Streamlit 双面板 UI
-12. 离线可复现的评测（产品指标评测脚本 + 30 条数据集）
+12. 可重复运行的产品评测脚本与 30 条样例数据（不需启动服务，但需本地模型文件和在线 DeepSeek API）
 
 ---
 
@@ -110,7 +112,7 @@ flowchart TB
     subgraph Knowledge["知识与数据层"]
         direction LR
         DOCS[("data/documents<br/>PRD · 技术设计 · 测试资料")]
-        INGEST["多文档解析与分块<br/>PDF · MD · TXT · DOCX"]
+        INGEST["多文档解析与分块<br/>PDF · MD · TXT"]
         EMB["本地 Embedding<br/>bge-small-zh-v1.5"]
         CH[("Chroma<br/>知识向量库")]
         ISSUES[("issues.json<br/>历史问题库")]
@@ -241,9 +243,9 @@ flowchart TD
     DA --> GFA
 
     subgraph Assembly["④ 结果组装与溯源"]
-        GFA["generate_final_answer<br/>仅使用已检索上下文"]
-        PC["prepare_citations<br/>从 metadata 去重组装"]
-        CHECK{"insufficient_evidence<br/>或高不确定性？"}
+        GFA["generate_final_answer<br/>按分支生成或格式化答案"]
+        PC["prepare_citations<br/>从检索结果 metadata 组装"]
+        CHECK{"AI 建议用例<br/>或低意图置信度？"}
         FLAG["requires_confirmation = true<br/>建议人工确认"]
         RESULT["结构化响应<br/>答案 · 引用 · 工具 · 耗时"]
 
@@ -334,11 +336,11 @@ flowchart TD
 │   ├── run_product_eval.py       # 产品指标评测脚本
 │   ├── run_ragas.py              # 上游 RAGAS 脚本（保留）
 │   ├── datasets/dev_agent_eval.json
-│   └── results/latest.json       # 真实评测结果
+│   └── results/latest.json       # 仓库保存的历史运行结果
 ├── scripts/
-│   ├── build_knowledge.py        # 离线建索引
+│   ├── build_knowledge.py        # 使用已下载的本地 Embedding 模型建索引
 │   └── download_embedding_model.py
-└── tests/                        # pytest 测试套件（32 条）
+└── tests/                        # pytest 测试套件
 ```
 
 ---
@@ -389,9 +391,9 @@ flowchart TD
 
 ---
 
-## 9. 引用溯源与非编造（Citation / No Fabrication）
+## 9. 引用溯源与证据边界
 
-- 引用（citation）**只来自真实检索结果**，在 `prepare_citations` 节点从 `retrieved_context` 元数据构建，不包含任何模型幻觉来源。
+- 引用条目在 `prepare_citations` 节点从 `retrieved_context` 元数据构建；这约束了**来源列表**，不等于验证了回答中的每个事实。
 - 最终答案 prompt 明确要求「仅根据检索片段回答，用 `[1][2]` 标注引用来源，不要编造来源或超出片段内容」。
 - 检索不到依据时返回固定提示（`当前知识库未检索到足够依据。` / `未找到匹配的历史 Issue。`），而非强行生成。
 - 测试用例中 `basis_type=ai_suggestion` 会显式标注为「AI 建议」，并在响应中提示「建议人工确认」。
@@ -400,19 +402,19 @@ flowchart TD
 
 ## 10. Human-in-the-Loop（人工反馈闭环）
 
-- 前端对每条回答提供 **采纳 / 修改后采纳 / 不采纳** 三个按钮。
-- 采纳率偏低或出现「AI 建议」型测试用例时，回答会追加 `（建议人工确认）` 提示。
+- 前端对**最近一条回答**提供 **采纳 / 修改后采纳 / 不采纳** 三个按钮（该回答需带任务 ID）。
+- 出现「AI 建议」型测试用例，或意图分类置信度低于 0.6 时，回答会追加 `（建议人工确认）` 提示；采纳率只用于统计，不会自动触发此提示。
 - 反馈通过 `POST /feedback` 写回 SQLite，供指标统计与后续优化参考。
 
 ---
 
 ## 11. 指标定义（Metrics）
 
-`server/metrics/tracker.py` 以 SQLite 表 `tasks` 记录每任务一行（仅任务元数据与反馈，不存查询/答案内容）。`GET /metrics/summary` 返回：
+`server/metrics/tracker.py` 以 SQLite 表 `tasks` 记录每任务一行：会话 ID、意图、时间、耗时、成功标记和反馈；若提交「修改后采纳」，还会保存修改后的答案 `edited_answer`。聊天消息保存在服务进程的内存会话中，上传文档会保存到本地 `.rag_workspace/uploads`。`GET /metrics/summary` 返回：
 
 | 指标 | 定义 |
 | --- | --- |
-| `task_completion_rate` | 成功任务数 / 总任务数 |
+| `task_completion_rate` | 工作流成功标记为真的任务数 / 总任务数；不等于答案正确率 |
 | `acceptance_rate` | （采纳 + 修改后采纳）/ 有反馈任务数 |
 | `direct_accept_rate` | 直接采纳 / 有反馈任务数 |
 | `human_edit_rate` | 修改后采纳 /（采纳 + 修改后采纳） |
@@ -428,7 +430,7 @@ flowchart TD
   - `DEEPSEEK_API_KEY`（必需，用于 LLM）
   - `SERPER_API_KEY`（可选——仅上游旧版 web 搜索工具使用，**默认工作流不依赖**）
   - `EMBEDDING_MODEL_PATH`（默认 `models/bge-small-zh-v1.5`）
-- 本地 Embedding 模型：运行 `python scripts/download_embedding_model.py` 下载到 `models/`（运行时**不联网**）。
+- 本地 Embedding 模型：运行 `python scripts/download_embedding_model.py` 下载到 `models/`；下载需要网络，之后 Embedding 加载使用本地文件。对话和评测仍需联网调用 DeepSeek。
 
 ---
 
@@ -511,30 +513,30 @@ streamlit run client/app.py --server.port 8501
 python -m pytest tests/ -v
 ```
 
-32 条测试覆盖：文档摄入、知识检索、Issue 检索、意图路由、测试用例 Schema、反馈、指标、API 集成。**最新一次全量运行：32 passed。**
+测试文件覆盖文档摄入、知识检索、Issue 检索、意图路由、测试用例 Schema、反馈、指标与 API。运行全套测试前需安装项目依赖，并准备本地 Embedding 模型；仓库未保存可证明当前环境通过全套测试的报告。
 
 ---
 
 ## 17. 评测（Evaluation）
 
-离线评测脚本 `evaluation/run_product_eval.py` 直接运行编译后的工作流（不依赖服务器），对 `evaluation/datasets/dev_agent_eval.json` 的 **30 条数据**（10 知识 + 10 Issue + 10 测试用例）逐条运行并统计：
+评测脚本 `evaluation/run_product_eval.py` 直接运行编译后的工作流（不依赖 FastAPI 服务），对 `evaluation/datasets/dev_agent_eval.json` 的 **30 条合成场景样例**（10 知识 + 10 Issue + 10 测试用例）逐条运行并统计。运行前需下载本地 Embedding 模型、配置 DeepSeek API Key，并可联网访问 DeepSeek；这不是完全离线评测。
 
 ```bash
 python evaluation/run_product_eval.py
 ```
 
-**真实评测结果**（`evaluation/results/latest.json`，非人工编造）：
+**仓库保存的一次历史运行结果**（`evaluation/results/latest.json`；不是本次运行的即时成绩）：
 
-| 指标 | 数值 |
-| --- | --- |
-| Intent Accuracy（意图准确率） | **0.9667**（29/30） |
-| Source Hit Rate（知识来源命中率） | **1.0**（10/10） |
-| Issue Hit Rate（Issue 命中率） | **0.9**（9/10） |
-| Test Case Schema Pass Rate | **1.0**（10/10） |
-| Task Completion Rate | **1.0** |
-| Mean Latency | **5233.9 ms** |
+| 指标 | 脚本中的判定与分母 | 保存的结果 |
+| --- | --- | --- |
+| Intent Accuracy（意图准确率） | 预测意图等于样例标注意图 / 全部 30 条 | **0.9667**（29/30） |
+| Source Hit Rate（知识来源命中率） | 检索片段中至少一个 `source` 在预期来源列表内 / 10 条知识样例；不检查最终回答是否正确 | **1.0**（10/10） |
+| Issue Hit Rate（Issue 命中率） | 检索结果中至少一个 `issue_id` 在预期 Issue 列表内 / 10 条 Issue 样例 | **0.9**（9/10） |
+| Test Case Schema Pass Rate | 生成非空用例，且每条具备必需字段、非空步骤和合法 `basis_type` / 10 条测试用例样例；不评价用例质量 | **1.0**（10/10） |
+| Task Completion Rate | 工作流 `success` 为真且最终回答非空 / 全部 30 条；不要求意图或检索命中正确 | **1.0**（30/30） |
+| Mean Latency | 全部 30 条工作流报告的 `latency_ms` 算术平均 | **5233.9 ms** |
 
-> 唯一未命中的是 `i008`（「Redis 验证码 key 不设 TTL 会怎样？」）：该问句以「会怎样」发问，意图路由将其判为知识问答而非历史 Issue 查询——这是一个真实的边界情形，已如实保留在结果中，未做任何数据修补。
+> `i008`（「Redis 验证码 key 不设 TTL 会怎样？」）标注为 Issue 查询，但历史结果路由到知识问答，因此未命中预期 Issue；它仍返回非空答案并被计入 Task Completion。这说明完成率不能替代路由正确率或答案质量评估。上述数值只描述仓库保存的那次运行；模型响应、API 状态、环境和数据变化都可能使重跑结果不同，不能外推为生产效果。
 
 ---
 
@@ -546,15 +548,17 @@ python evaluation/run_product_eval.py
 4. **Windows 文件锁**：增量上传采用 `add_documents` 原地追加，避免对打开中的 Chroma 目录做 `rmtree`。
 5. **SERPER 状态**：默认工作流不使用 web 搜索；`SERPER_API_KEY` 仅为上游旧版 `tools.py` 的可选依赖。
 6. **演示数据为合成**：知识文档与 Issue 均为演示用虚构内容，不代表真实生产数据。
+7. **生成与评测边界**：引用、结构校验及成功标记都不能保证答案或测试用例正确；尚无真实用户采纳率、节省时间或生产环境验证。
 
 ---
 
-## 19. 安全注意事项
+## 19. 数据与安全注意事项
 
-- `.env` 与 `DEEPSEEK_API_KEY` **从未提交**；`.env.example` 仅保留空占位。
+- `.env` 已列入 `.gitignore`，`.env.example` 仅保留空占位；仍需自行保护 API Key，不应在日志、截图或提交中泄露。
 - Embedding 模型权重在 `models/`（已 gitignore），**不提交 Git**。
 - 前端「Agent 执行过程」只展示确定性信息（意图 / 工具 / 检索分块 / 延迟），**不展示链式思考（CoT）或隐式推理**。
 - 后端异常**不会把 Python stack trace 原样返回前端**；`run_workflow` 统一捕获并返回友好错误。
+- 聊天问题及检索上下文会发送给 DeepSeek；如启用 LangSmith 追踪，也可能向该服务发送运行数据。上传文件与修改后采纳的答案保存在本地工作区/SQLite 中。此原型未提供敏感信息脱敏、访问控制或数据保留策略；不要上传真实敏感资料。
 
 ---
 
